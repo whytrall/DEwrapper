@@ -11,14 +11,14 @@ module DEwrapper
     end
 
     def current(semester)
+      # TODO: Break down into separate class
+
       req = self.class.get('/servlet/distributedCDE?Rule=eRegister', @options)
 
       sem_flag = false
       full_data = req.css('#FormName .d_table tr').drop(1)
 
-      schema = {
-          semesters: {}
-      }
+      schema = { semesters: {} }
 
       curr_sem = -1
 
@@ -26,7 +26,7 @@ module DEwrapper
         try_header_el = row.at_css('th[colspan="9"]')
         unless try_header_el.nil?
           curr_sem = try_header_el.text.scan(/\d/)[0].to_i
-          if (curr_sem == semester || semester.zero?) && (!sem_flag || semester.zero?)
+          if (curr_sem == semester && !sem_flag) || semester.zero?
             schema[:semesters][curr_sem] = []
             sem_flag = true
           elsif !sem_flag
@@ -36,29 +36,9 @@ module DEwrapper
           end
         end
 
-        # TODO: move to fill_subject()
-
         next unless sem_flag
 
-        all_exams = [:exam, :credit, :diff_credit, :course_work, :course_project]
-        exam_type = :unknown
-        exam_result = nil
-
-        all_exams.each_with_index do |ex, idx|
-          # yes, this looks like shit
-          # but nokogiri doesn't work as it supposed to
-          unless Nokogiri::HTML(row.css('td')[idx+4].to_s).css('*').text == ''
-            exam_type = ex
-            exam_result = row.css('td')[idx+4].text unless row.css('td')[idx+4].text == 'x'
-          end
-        end
-
-        t = {
-            subject: row.css('a').text,
-            rating: Nokogiri::HTML(row.css('td')[3].to_s).css('td').text.sub(',', '.').to_f,
-            examination_type: exam_type,
-            examination_result: exam_result
-        }
+        t = parse_row(row)
 
         schema[:semesters][curr_sem.to_i].push t unless t[:subject].empty?
       end
@@ -67,8 +47,27 @@ module DEwrapper
     end
 
     private
-    def fill_subject subj
+    def parse_row row
+      all_exams = %i[exam credit diff_credit course_work course_project]
+      exam_type = :unknown
+      exam_result = nil
 
+      all_exams.each_with_index do |ex, idx|
+        # yes, this looks like shit
+        # but nokogiri doesn't work as it supposed to
+        next if Nokogiri::HTML(row.css('td')[idx+4].to_s).css('*').text == ''
+
+        exam_type = ex
+        unless row.css('td')[idx + 4].text == 'x'
+          exam_result = row.css('td')[idx + 4].text
+        end
+      end
+      {
+        subject: row.css('a').text,
+        rating: Nokogiri::HTML(row.css('td')[3].to_s).css('td').text.sub(',', '.').to_f,
+        examination_type: exam_type,
+        examination_result: exam_result
+      }
     end
   end
 end

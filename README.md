@@ -47,12 +47,12 @@ user.info
 номер семестра = 0
 
 ```ruby
-    user.marks.current 1 # 1 = номер семестра
+user.marks.current 1 # 1 = номер семестра
 ```
 
 Альтернативный способ:
 ```ruby
-    DEwrapper::Marks.new(user).current 1
+DEwrapper::Marks.new(user).current 1
 ```
 
 Пример структуры:
