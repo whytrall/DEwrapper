@@ -13,8 +13,8 @@ module DEwrapper
     # @return ¯\_(ツ)_/¯
     def initialize(token, user_id = nil)
       @token = token
-      @user_id = user_id
-      @user_info = nil
+      @id = user_id
+      @info = nil
       @options = { headers: DEFAULT_HEADERS }
       @options[:headers]['Cookie'] = "JSESSIONID=#{@token}; User_lang_id=1;"
     end
@@ -32,7 +32,10 @@ module DEwrapper
         raise InvalidLoginOrPasswordError
       end
 
-      raise GeneralLoginError unless req.to_s.include?('SECURITYGROUP')
+      unless req.to_s.include?('SECURITYGROUP') &&
+             req.to_s.include?('Информационные ресурсы')
+        raise GeneralLoginError, req
+      end
 
       # This big thing extracts token from cookie
       isu_id = req.css('input[name="PERSON"]').first['value']
@@ -51,15 +54,24 @@ module DEwrapper
 
     # @return Hash
     def info
-      @user_info unless @user_info.nil?
+      @info ||= parse_info
+    end
 
+    # @return Marks.new
+    def marks
+      DEwrapper::Marks.new(self)
+    end
+
+    private
+
+    def parse_info
       req = self.class.get('/servlet/distributedCDE?Rule=editPersonProfile',
                            @options)
 
       els = req.css('form[name="editForm"] .d_table tr')
 
-      @user_info = {
-        id: @user_id,
+      {
+        id: @id,
         first_name: els[1].css('td[colspan]').text,
         middle_name: els[2].css('td[colspan]').text,
         last_name: els[0].css('td[colspan]').text,
@@ -69,11 +81,6 @@ module DEwrapper
         dob: Time.parse(els[4].css('td[colspan]').text),
         pob: els[5].css('td[colspan]').text
       }
-    end
-
-    # @return Marks.new
-    def marks
-      DEwrapper::Marks.new(self)
     end
   end
 end

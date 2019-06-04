@@ -8,3 +8,4 @@
 /tmp/
 .env.test.local
 /.idea/
+.DS_Store
