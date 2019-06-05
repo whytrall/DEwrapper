@@ -28,13 +28,14 @@ module DEwrapper
                    'PASSWD': password.to_s
                  })
 
-      if req.to_s.include?('Invalid login/password')
+      if req.include?('Invalid login/password')
         raise InvalidLoginOrPasswordError
       end
 
-      unless req.to_s.include?('SECURITYGROUP') &&
-             req.to_s.include?('Информационные ресурсы')
-        raise GeneralLoginError, req
+      unless req.to_s.include?('SECURITYGROUP')
+        unless req.to_s.include?('divCalendarIcon')
+          raise GeneralLoginError, req
+        end
       end
 
       # This big thing extracts token from cookie
