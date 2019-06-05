@@ -28,7 +28,7 @@ module DEwrapper
                    'PASSWD': password.to_s
                  })
 
-      if req.include?('Invalid login/password')
+      if req.to_s.include?('Invalid login/password')
         raise InvalidLoginOrPasswordError
       end
 
